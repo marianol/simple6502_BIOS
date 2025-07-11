@@ -299,7 +299,8 @@ display_addr:
     jsr print_char
     
     ; Print value at address
-    lda (mem_addr_lo)  ; Read from address
+    ldy #0
+    lda (mem_addr_lo),y  ; Read from address
     jsr print_hex_byte
     lda #$0a
     jsr print_char
@@ -378,7 +379,8 @@ write_loop:
 
 write_byte:
     ; Write parsed byte to current address
-    sta (mem_addr_lo)
+    ldy #0
+    sta (mem_addr_lo),y
     
     ; Increment address
     inc mem_addr_lo
@@ -654,7 +656,8 @@ display_byte_loop:
     bcs display_line_done
     
 display_this_byte:
-    lda (mem_addr_lo)  ; Read byte
+    ldy #0
+    lda (mem_addr_lo),y  ; Read byte
     jsr print_hex_byte
     lda #' '
     jsr print_char
