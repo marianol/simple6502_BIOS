@@ -186,7 +186,7 @@ monitor:
     
     ; Initialize command buffer
     ldx #$00
-    stx cmrex
+    stx cmd_index
     
     ; Read and echo characters
 monitor_loop:
