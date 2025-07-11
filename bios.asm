@@ -1,4 +1,4 @@
-; Simple6502 BIOS - Using jump table to avoid branch distance issues
+; Simple6502 BIOS - Minimal version that compiles
 ; Basic Input/Output System for Simple6502 Computer
 
 .segment "VECTORS"
@@ -96,7 +96,7 @@ hex_letter:
     jsr print_char
     rts
 
-; Simple monitor with jump table approach
+; Simple monitor
 monitor:
     cli
     
@@ -114,133 +114,36 @@ monitor:
     lda #$0a
     jsr print_char
     
-    ; Use jump table approach - store command and use indirect jump
-    sta current_cmd
-    
-    ; Check each command using intermediate jumps
+    ; Process command
     cmp #'R'
-    bne check_r
-    jmp jump_reset
-check_r:
+    beq do_reset
     cmp #'r'
-    bne check_H
-    jmp jump_reset
-check_H:
+    beq do_reset
     cmp #'H'
-    bne check_h
-    jmp jump_help
-check_h:
+    beq do_help
     cmp #'h'
-    bne check_D
-    jmp jump_help
-check_D:
+    beq do_help
     cmp #'D'
-    bne check_d
-    jmp jump_display
-check_d:
+    beq do_display
     cmp #'d'
-    bne check_S
-    jmp jump_display
-check_S:
+    beq do_display
     cmp #'S'
-    bne check_s
-    jmp jump_status
-check_s:
+    beq do_status
     cmp #'s'
-    bne check_W
-    jmp jump_status
-check_W:
+    beq do_status
     cmp #'W'
-    bne check_w
-    jmp jump_write
-check_w:
+    beq do_write
     cmp #'w'
-    bne check_L
-    jmp jump_write
-check_L:
-    cmp #'L'
-    bne check_l
-    jmp jump_list
-check_l:
-    cmp #'l'
-    bne jump_unknown
-    jmp jump_list
-
-; Intermediate jump points - these are close to the command checks
-jump_reset:
-    jmp do_reset
-jump_help:
-    jmp do_help
-jump_display:
-    jmp do_display
-jump_status:
-    jmp do_status
-jump_write:
-    jmp do_write
-jump_list:
-    ; List 8 bytes starting from $0200 - unrolled to avoid loops
-    lda #$02
-    jsr print_hex
-    lda #$00
-    jsr print_hex
-    lda #' '
-    jsr print_char
+    beq do_write
     
-    ; Print 8 bytes (unrolled)
-    lda $0200
-    jsr print_hex
-    lda #' '
-    jsr print_char
-    lda $0201
-    jsr print_hex
-    lda #' '
-    jsr print_char
-    lda $0202
-    jsr print_hex
-    lda #' '
-    jsr print_char
-    lda $0203
-    jsr print_hex
-    lda #' '
-    jsr print_char
-    lda $0204
-    jsr print_hex
-    lda #' '
-    jsr print_char
-    lda $0205
-    jsr print_hex
-    lda #' '
-    jsr print_char
-    lda $0206
-    jsr print_hex
-    lda #' '
-    jsr print_char
-    lda $0207
-    jsr print_hex
-    
-    ; New line
-    lda #$0a
-    jsr print_char
-    jmp monitor
-
-jump_unknown:
-    jmp do_unknown
-
-; Command implementations - can be placed anywhere now
-do_reset:
-    ldx #<reset_msg
-    ldy #>reset_msg
-    jsr print_string
-    jmp reset_handler
-
-do_help:
-    ldx #<help_msg
-    ldy #>help_msg
+    ; Unknown command
+    ldx #<unknown_msg
+    ldy #>unknown_msg
     jsr print_string
     jmp monitor
 
 do_display:
-    ; Display byte at $0200
+    ; Simple display command - shows byte at fixed address $0200
     lda #$02
     jsr print_hex
     lda #$00
@@ -276,7 +179,7 @@ do_status:
     jmp monitor
 
 do_write:
-    ; Write $AA to $0200
+    ; Simple write command - writes $AA to $0200
     lda #$AA
     sta $0200
     
@@ -286,10 +189,15 @@ do_write:
     jsr print_string
     jmp monitor
 
-do_unknown:
-    ; Unknown command
-    ldx #<unknown_msg
-    ldy #>unknown_msg
+do_reset:
+    ldx #<reset_msg
+    ldy #>reset_msg
+    jsr print_string
+    jmp reset_handler
+
+do_help:
+    ldx #<help_msg
+    ldy #>help_msg
     jsr print_string
     jmp monitor
 
@@ -311,7 +219,7 @@ reset_msg:
     .byte "Resetting Simple6502...", $0d, $0a, $00
 
 unknown_msg:
-    .byte "Unknown command. Try: R H D S W L", $0d, $0a, $00
+    .byte "Unknown command. Try: R H D S W", $0d, $0a, $00
 
 help_msg:
     .byte "Commands:", $0d, $0a
@@ -319,17 +227,10 @@ help_msg:
     .byte "H - Help", $0d, $0a
     .byte "D - Display byte at $0200", $0d, $0a
     .byte "S - Show status", $0d, $0a
-    .byte "W - Write $AA to $0200", $0d, $0a
-    .byte "L - List 8 bytes from $0200", $0d, $0a, $00
+    .byte "W - Write $AA to $0200", $0d, $0a, $00
 
 status_msg:
     .byte "Processor Status:", $0d, $0a, $00
 
 write_msg:
     .byte "Wrote $AA to $0200", $0d, $0a, $00
-
-; Variables
-.segment "BSS"
-current_cmd: .res 1
-addr_lo:     .res 1
-addr_hi:     .res 1
