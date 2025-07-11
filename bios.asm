@@ -131,6 +131,10 @@ monitor:
     beq do_status
     cmp #'s'
     beq do_status
+    cmp #'W'
+    beq do_write
+    cmp #'w'
+    beq do_write
     
     ; Unknown command
     ldx #<unknown_msg
@@ -174,6 +178,17 @@ do_status:
     jsr print_char
     jmp monitor
 
+do_write:
+    ; Simple write command - writes $AA to $0200
+    lda #$AA
+    sta $0200
+    
+    ; Confirm write
+    ldx #<write_msg
+    ldy #>write_msg
+    jsr print_string
+    jmp monitor
+
 do_reset:
     ldx #<reset_msg
     ldy #>reset_msg
@@ -204,14 +219,18 @@ reset_msg:
     .byte "Resetting Simple6502...", $0d, $0a, $00
 
 unknown_msg:
-    .byte "Unknown command. Try: R H D S", $0d, $0a, $00
+    .byte "Unknown command. Try: R H D S W", $0d, $0a, $00
 
 help_msg:
     .byte "Commands:", $0d, $0a
     .byte "R - Reset system", $0d, $0a
     .byte "H - Help", $0d, $0a
     .byte "D - Display byte at $0200", $0d, $0a
-    .byte "S - Show status", $0d, $0a, $00
+    .byte "S - Show status", $0d, $0a
+    .byte "W - Write $AA to $0200", $0d, $0a, $00
 
 status_msg:
     .byte "Processor Status:", $0d, $0a, $00
+
+write_msg:
+    .byte "Wrote $AA to $0200", $0d, $0a, $00
