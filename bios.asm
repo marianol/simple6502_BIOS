@@ -123,11 +123,31 @@ monitor:
     beq do_help
     cmp #'h'
     beq do_help
+    cmp #'D'
+    beq do_display
+    cmp #'d'
+    beq do_display
     
     ; Unknown command
     ldx #<unknown_msg
     ldy #>unknown_msg
     jsr print_string
+    jmp monitor
+
+do_display:
+    ; Simple display command - shows byte at fixed address $0200
+    lda #$02
+    jsr print_hex
+    lda #$00
+    jsr print_hex
+    lda #' '
+    jsr print_char
+    
+    ; Read and display the byte
+    lda $0200
+    jsr print_hex
+    lda #$0a
+    jsr print_char
     jmp monitor
 
 do_reset:
@@ -160,9 +180,10 @@ reset_msg:
     .byte "Resetting Simple6502...", $0d, $0a, $00
 
 unknown_msg:
-    .byte "Unknown command. Try: R H", $0d, $0a, $00
+    .byte "Unknown command. Try: R H D", $0d, $0a, $00
 
 help_msg:
     .byte "Commands:", $0d, $0a
     .byte "R - Reset system", $0d, $0a
-    .byte "H - Help", $0d, $0a, $00
+    .byte "H - Help", $0d, $0a
+    .byte "D - Display byte at $0200", $0d, $0a, $00
