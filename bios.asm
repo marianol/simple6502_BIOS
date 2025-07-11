@@ -127,6 +127,10 @@ monitor:
     beq do_display
     cmp #'d'
     beq do_display
+    cmp #'S'
+    beq do_status
+    cmp #'s'
+    beq do_status
     
     ; Unknown command
     ldx #<unknown_msg
@@ -145,6 +149,26 @@ do_display:
     
     ; Read and display the byte
     lda $0200
+    jsr print_hex
+    lda #$0a
+    jsr print_char
+    jmp monitor
+
+do_status:
+    ; Show processor status
+    ldx #<status_msg
+    ldy #>status_msg
+    jsr print_string
+    
+    ; Show stack pointer
+    lda #'S'
+    jsr print_char
+    lda #'P'
+    jsr print_char
+    lda #' '
+    jsr print_char
+    tsx
+    txa
     jsr print_hex
     lda #$0a
     jsr print_char
@@ -180,10 +204,14 @@ reset_msg:
     .byte "Resetting Simple6502...", $0d, $0a, $00
 
 unknown_msg:
-    .byte "Unknown command. Try: R H D", $0d, $0a, $00
+    .byte "Unknown command. Try: R H D S", $0d, $0a, $00
 
 help_msg:
     .byte "Commands:", $0d, $0a
     .byte "R - Reset system", $0d, $0a
     .byte "H - Help", $0d, $0a
-    .byte "D - Display byte at $0200", $0d, $0a, $00
+    .byte "D - Display byte at $0200", $0d, $0a
+    .byte "S - Show status", $0d, $0a, $00
+
+status_msg:
+    .byte "Processor Status:", $0d, $0a, $00
