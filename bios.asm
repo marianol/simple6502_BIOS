@@ -8,6 +8,14 @@ addr_hi:     .res 1     ; Address high byte - will be at $01
 cmd_len:     .res 1     ; Command length - will be at $02
 end_lo:      .res 1     ; End address low byte - will be at $03
 end_hi:      .res 1     ; End address high byte - will be at $04
+; Saved processor state for S command
+saved_a:     .res 1     ; Saved accumulator
+saved_x:     .res 1     ; Saved X register
+saved_y:     .res 1     ; Saved Y register
+saved_p:     .res 1     ; Saved processor status
+saved_s:     .res 1     ; Saved stack pointer
+saved_pc_lo: .res 1     ; Saved program counter low
+saved_pc_hi: .res 1     ; Saved program counter high
 
 .segment "VECTORS"
     .word nmi_handler
@@ -155,6 +163,10 @@ cmd_ready:
     ; Skip if empty
     cpx #0
     beq monitor
+    
+    ; Capture processor state before processing command
+    ; This allows the S command to show the state from before the monitor was entered
+    jsr capture_state
     
     ; Get first character for command processing
     lda cmd_buffer
@@ -335,21 +347,55 @@ do_examine:
     jmp monitor
 
 do_status:
-    ; Show processor status
-    ldx #<status_msg
-    ldy #>status_msg
+    ; Show complete processor status
+    ldx #<status_header
+    ldy #>status_header
     jsr print_string
     
-    ; Show stack pointer
-    lda #'S'
+    ; Print saved program counter
+    lda saved_pc_hi
+    jsr print_hex
+    lda saved_pc_lo
+    jsr print_hex
+    lda #' '
     jsr print_char
-    lda #'P'
+    
+    ; Print saved processor status register
+    lda saved_p
+    jsr print_hex
+    lda #' '
+    jsr print_char
+    
+    ; Print saved accumulator
+    lda saved_a
+    jsr print_hex
+    lda #' '
+    jsr print_char
+    
+    ; Print saved X register
+    lda saved_x
+    jsr print_hex
+    lda #' '
+    jsr print_char
+    
+    ; Print saved Y register
+    lda saved_y
+    jsr print_hex
+    lda #' '
+    jsr print_char
+    
+    ; Print saved stack pointer
+    lda saved_s
+    jsr print_hex
+    lda #' '
     jsr print_char
     lda #' '
     jsr print_char
-    tsx
-    txa
-    jsr print_hex
+    
+    ; Print processor flags in binary (NV-BDIZC)
+    lda saved_p
+    jsr print_flags_binary
+    
     lda #$0a
     jsr print_char
     jmp monitor
@@ -470,6 +516,13 @@ write_val2_ok:
     jsr print_char
     jmp monitor
 
+; G command helpers - keep close to avoid branch distance issues
+go_error:
+    ldx #<go_error_msg
+    ldy #>go_error_msg
+    jsr print_string
+    jmp monitor
+
 do_go:
     ; Enhanced G command to execute code at address
     lda cmd_len
@@ -540,15 +593,28 @@ go_parse:
     jmp (addr_lo)
     
 go_return:
-    ; Return point from user code
+    ; Return point from user code - capture final state
+    sta saved_a        ; Save accumulator from user program
+    stx saved_x        ; Save X register from user program  
+    sty saved_y        ; Save Y register from user program
+    
+    ; Save stack pointer
+    tsx
+    stx saved_s
+    
+    ; Save processor status
+    php
+    pla
+    sta saved_p
+    
+    ; Save the return address (where user program ended)
+    lda addr_hi
+    sta saved_pc_hi
+    lda addr_lo
+    sta saved_pc_lo
+    
     ldx #<go_return_msg
     ldy #>go_return_msg
-    jsr print_string
-    jmp monitor
-    
-go_error:
-    ldx #<go_error_msg
-    ldy #>go_error_msg
     jsr print_string
     jmp monitor
 
@@ -609,6 +675,50 @@ do_unknown:
     ldy #>unknown_msg
     jsr print_string
     jmp monitor
+
+; Capture processor state for S command
+capture_state:
+    ; Save current monitor state (best approximation we can do)
+    sta saved_a        ; Save accumulator
+    stx saved_x        ; Save X register
+    sty saved_y        ; Save Y register
+    
+    ; Save stack pointer
+    tsx
+    stx saved_s
+    
+    ; Save processor status
+    php                ; Push processor status
+    pla                ; Pull it into A
+    sta saved_p        ; Save it
+    
+    ; Set a reasonable PC value (current monitor location)
+    lda #>monitor
+    sta saved_pc_hi
+    lda #<monitor
+    sta saved_pc_lo
+    
+    rts
+
+; Print processor flags in binary format (NV-BDIZC)
+print_flags_binary:
+    ; Print each bit of the processor status register
+    ldx #8             ; 8 bits to print
+    
+print_bit_loop:
+    asl                ; Shift left, MSB goes to carry
+    pha                ; Save the shifted value
+    
+    ; Print '1' if carry set, '0' if clear
+    lda #'0'
+    adc #0             ; Add carry (0 or 1)
+    jsr print_char
+    
+    pla                ; Restore the value
+    dex
+    bne print_bit_loop
+    
+    rts
 
 ; Address parsing functions for L command
 parse_start_addr:
@@ -790,6 +900,9 @@ help_msg:
 
 status_msg:
     .byte "Processor Status:", $0d, $0a, $00
+
+status_header:
+    .byte "PC   SR AC XR YR SP  NV-BDIZC", $0d, $0a, $00
 
 write_msg:
     .byte "Wrote $AA to $0200", $0d, $0a, $00

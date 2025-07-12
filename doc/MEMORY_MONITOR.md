@@ -84,13 +84,28 @@ Examines and displays the byte at address $0300. This is a quick way to check a 
 ### S - Show Status
 **Syntax:** `S`
 
-Displays processor status information, including the current stack pointer value.
+Displays complete processor status information in the format used by professional 6502 debuggers.
+
+**Format:**
+```
+PC   SR AC XR YR SP  NV-BDIZC
+C000 B0 C2 00 00 EE  10110000
+```
+
+**Fields:**
+- **PC:** Program Counter (address of next instruction)
+- **SR:** Status Register (processor flags)
+- **AC:** Accumulator register
+- **XR:** X index register
+- **YR:** Y index register  
+- **SP:** Stack Pointer
+- **NV-BDIZC:** Status register flags in binary (N=Negative, V=Overflow, B=Break, D=Decimal, I=Interrupt, Z=Zero, C=Carry)
 
 **Example:**
 ```
 > S
-Processor Status:
-SP FF
+PC   SR AC XR YR SP  NV-BDIZC
+8123 34 FF 00 01 FE  00110100
 ```
 
 ### W - Write Memory

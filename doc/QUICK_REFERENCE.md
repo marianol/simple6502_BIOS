@@ -47,9 +47,15 @@
 
 ### System Operations
 ```
-> S            # Check status
+> S            # Show complete processor status
 > R            # Reset system
 > H            # Show help
+```
+
+### Status Command Output
+```
+PC   SR AC XR YR SP  NV-BDIZC
+8123 34 FF 00 01 FE  00110100
 ```
 
 ## Error Messages
