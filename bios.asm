@@ -189,8 +189,12 @@ check_W:
     jmp jump_write
 check_L:
     cmp #'L'
-    bne jump_unknown
+    bne check_G
     jmp jump_list
+check_G:
+    cmp #'G'
+    bne jump_unknown
+    jmp jump_go
 
 ; Intermediate jump points - keep close to checks above
 jump_reset:
@@ -207,6 +211,8 @@ jump_write:
     jmp do_write
 jump_list:
     jmp do_list
+jump_go:
+    jmp do_go
 jump_unknown:
     jmp do_unknown
 
@@ -464,6 +470,88 @@ write_val2_ok:
     jsr print_char
     jmp monitor
 
+do_go:
+    ; Enhanced G command to execute code at address
+    lda cmd_len
+    cmp #1             ; Just 'G'?
+    beq go_error       ; G requires an address
+    cmp #5             ; 'G 1234'?
+    beq go_parse
+    jmp go_error
+    
+go_parse:
+    ; Parse format: 'G 1234'
+    lda cmd_buffer+1   ; Should be space
+    cmp #' '
+    bne go_error
+    
+    ; Parse address (4 hex digits) - reuse parsing logic
+    lda cmd_buffer+2
+    jsr hex_char_to_val
+    bcs go_error
+    asl
+    asl
+    asl
+    asl
+    sta addr_hi
+    
+    lda cmd_buffer+3
+    jsr hex_char_to_val
+    bcs go_error
+    ora addr_hi
+    sta addr_hi
+    
+    lda cmd_buffer+4
+    jsr hex_char_to_val
+    bcs go_error
+    asl
+    asl
+    asl
+    asl
+    sta addr_lo
+    
+    lda cmd_buffer+5
+    jsr hex_char_to_val
+    bcs go_error
+    ora addr_lo
+    sta addr_lo
+    
+    ; Set up return address on stack for RTS or BRK
+    ; Push monitor return address - 1 (RTS adds 1)
+    lda #>go_return-1
+    pha
+    lda #<go_return-1
+    pha
+    
+    ; Show execution message
+    ldx #<go_msg
+    ldy #>go_msg
+    jsr print_string
+    
+    ; Print target address
+    lda addr_hi
+    jsr print_hex
+    lda addr_lo
+    jsr print_hex
+    lda #$0a
+    jsr print_char
+    
+    ; Jump to user code
+    jmp (addr_lo)
+    
+go_return:
+    ; Return point from user code
+    ldx #<go_return_msg
+    ldy #>go_return_msg
+    jsr print_string
+    jmp monitor
+    
+go_error:
+    ldx #<go_error_msg
+    ldy #>go_error_msg
+    jsr print_string
+    jmp monitor
+
 do_list:
     ; Enhanced L command with optional address range
     lda cmd_len
@@ -687,7 +775,7 @@ reset_msg:
     .byte "Resetting Simple6502...", $0d, $0a, $00
 
 unknown_msg:
-    .byte "Unknown command. Try: R H D E S W L", $0d, $0a, $00
+    .byte "Unknown command. Try: R H D E S W L G", $0d, $0a, $00
 
 help_msg:
     .byte "Commands:", $0d, $0a
@@ -697,7 +785,8 @@ help_msg:
     .byte "E - Examine byte at $0300", $0d, $0a
     .byte "S - Show status", $0d, $0a
     .byte "W [addr val] - Write (ex: W 1234 AA)", $0d, $0a
-    .byte "L [from to] - List range (ex: L 1000 1010)", $0d, $0a, $00
+    .byte "L [from to] - List range (ex: L 1000 1010)", $0d, $0a
+    .byte "G addr - Go execute at address (ex: G 1000)", $0d, $0a, $00
 
 status_msg:
     .byte "Processor Status:", $0d, $0a, $00
@@ -716,6 +805,15 @@ error_msg:
 
 list_error_msg:
     .byte "Error: Use format L 1000 1010", $0d, $0a, $00
+
+go_msg:
+    .byte "Executing at ", $00
+
+go_return_msg:
+    .byte "Returned from user code", $0d, $0a, $00
+
+go_error_msg:
+    .byte "Error: Use format G 1234", $0d, $0a, $00
 
 ; Regular RAM variables
 .segment "BSS"
