@@ -1,5 +1,7 @@
 # Getting Started with Simple6502 BIOS
 
+*Copyright (c) 2025 Mariano Luna - Licensed under the BSD-2-Clause License*
+
 ## Prerequisites
 
 - **cc65 toolchain** - Required for building the BIOS

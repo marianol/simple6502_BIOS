@@ -1,5 +1,9 @@
-; Simple6502 BIOS - Using XOR trick for case-insensitive commands
-; Basic Input/Output System for Simple6502 Computer
+; Simple6502 BIOS - Basic Input/Output System for Simple6502 Computer
+; Copyright (c) 2025 Mariano Luna
+; Licensed under the BSD-2-Clause License
+;
+; This software provides a comprehensive memory monitor and debugging system
+; for 6502-based homebrew computers with professional-grade features.
 
 ; Zero page variables - MUST be defined first for single-pass assembler
 .segment "ZEROPAGE"
@@ -877,8 +881,10 @@ irq_handler:
 ; Messages
 boot_msg:
     .byte "Simple6502 BIOS v1.0", $0d, $0a
+    .byte "Copyright (c) 2025 Mariano Luna", $0d, $0a
     .byte "RAM: $0000-$7EFF, ROM: $8000-$FFFF", $0d, $0a
     .byte "I/O: $7F00-$7FFF", $0d, $0a
+    .byte "Commands: R H D E S W L G", $0d, $0a
     .byte "Simple6502 Ready", $0d, $0a, $00
 
 reset_msg:

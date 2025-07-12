@@ -1,5 +1,7 @@
 # Simple6502 Memory Monitor
 
+*Copyright (c) 2025 Mariano Luna - Licensed under the BSD-2-Clause License*
+
 The Simple6502 BIOS includes a comprehensive memory monitor that provides essential debugging and development capabilities for 6502-based systems.
 
 ## Overview

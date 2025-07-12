@@ -1,4 +1,7 @@
 # Makefile for Simple6502 BIOS
+# Copyright (c) 2025 Mariano Luna
+# Licensed under the BSD-2-Clause License
+#
 # Requires cc65 toolchain
 # Builds in build/ subdirectory to keep project clean
 

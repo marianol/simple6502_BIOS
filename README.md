@@ -1,6 +1,9 @@
 # Simple6502 BIOS
 
-A basic BIOS (Basic Input/Output System) for the Simple6502 homebrew computer.
+A comprehensive BIOS (Basic Input/Output System) for the Simple6502 homebrew computer.
+
+**Copyright (c) 2025 Mariano Luna**  
+**Licensed under the BSD-2-Clause License**
 
 ## Features
 
@@ -130,7 +133,27 @@ The BIOS sets up basic interrupt vectors. Customize the handlers for:
 
 ## Binary Information
 
-- **Size:** ~1.7KB (fits comfortably in ROM)
+- **Size:** ~1.8KB (fits comfortably in ROM)
 - **Memory Usage:** Minimal RAM footprint
-- **Zero Page:** 5 bytes for variables
+- **Zero Page:** 11 bytes for variables
 - **Stack Usage:** Standard 6502 stack operations
+
+## License
+
+Copyright (c) 2025 Mariano Luna
+
+This project is licensed under the BSD-2-Clause License - see the [LICENSE](LICENSE) file for details.
+
+### License Summary
+
+You are free to:
+- Use this software for any purpose
+- Modify and distribute the source code
+- Include it in commercial projects
+- Create derivative works
+
+Requirements:
+- Include the copyright notice and license in redistributions
+- Include the license text in binary distributions
+
+This is a permissive open-source license that allows maximum freedom while protecting the author.

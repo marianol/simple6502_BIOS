@@ -1,5 +1,7 @@
 # Simple6502 Memory Monitor - Quick Reference
 
+*Copyright (c) 2025 Mariano Luna - Licensed under the BSD-2-Clause License*
+
 ## Command Summary
 
 | Command | Syntax | Description | Example |
