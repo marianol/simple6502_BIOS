@@ -6,6 +6,8 @@
 addr_lo:     .res 1     ; Address low byte - will be at $00
 addr_hi:     .res 1     ; Address high byte - will be at $01  
 cmd_len:     .res 1     ; Command length - will be at $02
+end_lo:      .res 1     ; End address low byte - will be at $03
+end_hi:      .res 1     ; End address high byte - will be at $04
 
 .segment "VECTORS"
     .word nmi_handler
@@ -463,49 +465,54 @@ write_val2_ok:
     jmp monitor
 
 do_list:
-    ; List 8 bytes starting from $0200 - unrolled to avoid loops
+    ; Enhanced L command with optional address range
+    lda cmd_len
+    cmp #1             ; Just 'L'?
+    beq list_default
+    cmp #10            ; 'L 1000 1010'?
+    beq list_range
+    jmp list_error
+    
+list_range:
+    ; Parse format: 'L 1000 1010'
+    lda cmd_buffer+1   ; Should be space
+    cmp #' '
+    bne list_error
+    
+    ; Parse start address (reuse parsing logic)
+    jsr parse_start_addr
+    bcs list_error
+    
+    ; Check for space before end address
+    lda cmd_buffer+6
+    cmp #' '
+    bne list_error
+    
+    ; Parse end address
+    jsr parse_end_addr
+    bcs list_error
+    
+    jmp display_range
+    
+list_default:
+    ; Default: List 8 bytes from $0200
     lda #$02
-    jsr print_hex
+    sta addr_hi
     lda #$00
-    jsr print_hex
-    lda #' '
-    jsr print_char
+    sta addr_lo
     
-    ; Print 8 bytes (unrolled to avoid branch distance issues)
-    lda $0200
-    jsr print_hex
-    lda #' '
-    jsr print_char
-    lda $0201
-    jsr print_hex
-    lda #' '
-    jsr print_char
-    lda $0202
-    jsr print_hex
-    lda #' '
-    jsr print_char
-    lda $0203
-    jsr print_hex
-    lda #' '
-    jsr print_char
-    lda $0204
-    jsr print_hex
-    lda #' '
-    jsr print_char
-    lda $0205
-    jsr print_hex
-    lda #' '
-    jsr print_char
-    lda $0206
-    jsr print_hex
-    lda #' '
-    jsr print_char
-    lda $0207
-    jsr print_hex
+    ; Set end address to $0207 (8 bytes)
+    lda #$02
+    sta end_hi
+    lda #$07
+    sta end_lo
     
-    ; New line
-    lda #$0a
-    jsr print_char
+    jmp display_range
+    
+list_error:
+    ldx #<list_error_msg
+    ldy #>list_error_msg
+    jsr print_string
     jmp monitor
 
 do_unknown:
@@ -513,6 +520,125 @@ do_unknown:
     ldx #<unknown_msg
     ldy #>unknown_msg
     jsr print_string
+    jmp monitor
+
+; Address parsing functions for L command
+parse_start_addr:
+    ; Parse start address from cmd_buffer+2 to +5
+    lda cmd_buffer+2
+    jsr hex_char_to_val
+    bcs parse_fail
+    asl
+    asl
+    asl
+    asl
+    sta addr_hi
+    
+    lda cmd_buffer+3
+    jsr hex_char_to_val
+    bcs parse_fail
+    ora addr_hi
+    sta addr_hi
+    
+    lda cmd_buffer+4
+    jsr hex_char_to_val
+    bcs parse_fail
+    asl
+    asl
+    asl
+    asl
+    sta addr_lo
+    
+    lda cmd_buffer+5
+    jsr hex_char_to_val
+    bcs parse_fail
+    ora addr_lo
+    sta addr_lo
+    
+    clc
+    rts
+
+parse_end_addr:
+    ; Parse end address from cmd_buffer+7 to +10
+    lda cmd_buffer+7
+    jsr hex_char_to_val
+    bcs parse_fail
+    asl
+    asl
+    asl
+    asl
+    sta end_hi
+    
+    lda cmd_buffer+8
+    jsr hex_char_to_val
+    bcs parse_fail
+    ora end_hi
+    sta end_hi
+    
+    lda cmd_buffer+9
+    jsr hex_char_to_val
+    bcs parse_fail
+    asl
+    asl
+    asl
+    asl
+    sta end_lo
+    
+    lda cmd_buffer+10
+    jsr hex_char_to_val
+    bcs parse_fail
+    ora end_lo
+    sta end_lo
+    
+    clc
+    rts
+
+parse_fail:
+    sec
+    rts
+
+; Display memory range from addr_lo/hi to end_lo/hi
+display_range:
+    ; Print address and up to 8 bytes per line
+    lda addr_hi
+    jsr print_hex
+    lda addr_lo
+    jsr print_hex
+    lda #' '
+    jsr print_char
+    
+    ; Print up to 8 bytes or until end address
+    ldx #0
+display_byte_loop:
+    ; Check if we've reached end address
+    lda addr_hi
+    cmp end_hi
+    bcc display_this_byte
+    bne display_done
+    lda addr_lo
+    cmp end_lo
+    bcs display_done
+    
+display_this_byte:
+    ldy #0
+    lda (addr_lo),y
+    jsr print_hex
+    lda #' '
+    jsr print_char
+    
+    ; Increment address
+    inc addr_lo
+    bne display_next
+    inc addr_hi
+    
+display_next:
+    inx
+    cpx #8             ; Max 8 bytes per line
+    bcc display_byte_loop
+    
+display_done:
+    lda #$0a
+    jsr print_char
     jmp monitor
 
 ; Simple hex character to value conversion
@@ -571,7 +697,7 @@ help_msg:
     .byte "E - Examine byte at $0300", $0d, $0a
     .byte "S - Show status", $0d, $0a
     .byte "W [addr val] - Write (ex: W 1234 AA)", $0d, $0a
-    .byte "L - List 8 bytes from $0200", $0d, $0a, $00
+    .byte "L [from to] - List range (ex: L 1000 1010)", $0d, $0a, $00
 
 status_msg:
     .byte "Processor Status:", $0d, $0a, $00
@@ -587,6 +713,9 @@ write_error_msg:
 
 error_msg:
     .byte "Error: Use format D 1234", $0d, $0a, $00
+
+list_error_msg:
+    .byte "Error: Use format L 1000 1010", $0d, $0a, $00
 
 ; Regular RAM variables
 .segment "BSS"
