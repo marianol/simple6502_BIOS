@@ -65,14 +65,38 @@ The BIOS is pre-configured for your hardware layout, but you can customize:
 3. **ACIA settings** - Adjust baud rate and communication parameters
 4. **Monitor commands** - Extend `handle_command` for custom functionality
 
-## Monitor Commands
+## Memory Monitor
 
-The basic monitor provides a simple prompt. Extend `handle_command` to add:
+The Simple6502 BIOS includes a comprehensive memory monitor with the following commands:
 
-- Memory dump/edit commands
-- Jump to user programs
-- Hardware diagnostics
-- File loading routines
+- **D [addr]** - Display memory byte
+- **W [addr val]** - Write value to memory
+- **L [from to]** - List memory range
+- **G addr** - Execute code at address
+- **S** - Show processor status
+- **E** - Examine memory at $0300
+- **R** - Reset system
+- **H** - Show help
+
+All commands are case-insensitive and support flexible addressing.
+
+### Documentation
+
+- **[Memory Monitor Guide](doc/MEMORY_MONITOR.md)** - Complete usage documentation
+- **[Quick Reference](doc/QUICK_REFERENCE.md)** - Command summary and examples
+
+### Example Usage
+
+```
+> W 0300 A9    # Write LDA #$FF instruction
+> W 0301 FF
+> W 0302 60    # Write RTS instruction
+> L 0300 0302  # Verify the program
+0300 A9 FF 60
+> G 0300       # Execute the program
+Executing at 0300
+Returned from user code
+```
 
 ## Interrupt Handling
 
@@ -82,12 +106,31 @@ The BIOS sets up basic interrupt vectors. Customize the handlers for:
 - Hardware interrupts
 - Non-maskable interrupts (NMI)
 
-## Next Steps
+## Features
 
-Consider adding:
+### Core BIOS Functions
+- System initialization and hardware setup
+- UART serial communication (MC68B50 ACIA)
+- Dual VIA (6522) I/O chip support
+- Interrupt vector handling
+- Memory clearing on boot
 
-- Memory test routines
-- Boot loader functionality
-- Hardware diagnostics
-- Extended monitor commands
-- File system support
+### Memory Monitor
+- Complete memory examination and editing
+- Code execution with return capability
+- Flexible address parsing
+- Professional command-line interface
+- Comprehensive error handling
+
+### Development Features
+- Clean build system with organized output
+- Zero page optimization for efficiency
+- Professional assembly code organization
+- Comprehensive documentation
+
+## Binary Information
+
+- **Size:** ~1.7KB (fits comfortably in ROM)
+- **Memory Usage:** Minimal RAM footprint
+- **Zero Page:** 5 bytes for variables
+- **Stack Usage:** Standard 6502 stack operations
