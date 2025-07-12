@@ -1,4 +1,4 @@
-; Simple6502 BIOS - Minimal version that compiles
+; Simple6502 BIOS - Using proven jump table pattern to avoid branch distance issues
 ; Basic Input/Output System for Simple6502 Computer
 
 .segment "VECTORS"
@@ -96,7 +96,7 @@ hex_letter:
     jsr print_char
     rts
 
-; Simple monitor
+; Monitor with proven jump table pattern
 monitor:
     cli
     
@@ -114,36 +114,86 @@ monitor:
     lda #$0a
     jsr print_char
     
-    ; Process command
+    ; Process command using intermediate jumps (proven pattern)
     cmp #'R'
-    beq do_reset
+    bne check_r
+    jmp jump_reset
+check_r:
     cmp #'r'
-    beq do_reset
+    bne check_H
+    jmp jump_reset
+check_H:
     cmp #'H'
-    beq do_help
+    bne check_h
+    jmp jump_help
+check_h:
     cmp #'h'
-    beq do_help
+    bne check_D
+    jmp jump_help
+check_D:
     cmp #'D'
-    beq do_display
+    bne check_d
+    jmp jump_display
+check_d:
     cmp #'d'
-    beq do_display
+    bne check_E
+    jmp jump_display
+check_E:
+    cmp #'E'
+    bne check_e
+    jmp jump_examine
+check_e:
+    cmp #'e'
+    bne check_S
+    jmp jump_examine
+check_S:
     cmp #'S'
-    beq do_status
+    bne check_s
+    jmp jump_status
+check_s:
     cmp #'s'
-    beq do_status
+    bne check_W
+    jmp jump_status
+check_W:
     cmp #'W'
-    beq do_write
+    bne check_w
+    jmp jump_write
+check_w:
     cmp #'w'
-    beq do_write
-    
-    ; Unknown command
-    ldx #<unknown_msg
-    ldy #>unknown_msg
+    bne jump_unknown
+    jmp jump_write
+
+; Intermediate jump points - CRITICAL: Keep these close to the checks above
+jump_reset:
+    jmp do_reset
+jump_help:
+    jmp do_help
+jump_display:
+    jmp do_display
+jump_examine:
+    jmp do_examine
+jump_status:
+    jmp do_status
+jump_write:
+    jmp do_write
+jump_unknown:
+    jmp do_unknown
+
+; Command implementations - can be anywhere since we use JMP (no distance limit)
+do_reset:
+    ldx #<reset_msg
+    ldy #>reset_msg
+    jsr print_string
+    jmp reset_handler
+
+do_help:
+    ldx #<help_msg
+    ldy #>help_msg
     jsr print_string
     jmp monitor
 
 do_display:
-    ; Simple display command - shows byte at fixed address $0200
+    ; Display byte at $0200
     lda #$02
     jsr print_hex
     lda #$00
@@ -153,6 +203,22 @@ do_display:
     
     ; Read and display the byte
     lda $0200
+    jsr print_hex
+    lda #$0a
+    jsr print_char
+    jmp monitor
+
+do_examine:
+    ; Examine byte at $0300 (different from D command)
+    lda #$03
+    jsr print_hex
+    lda #$00
+    jsr print_hex
+    lda #' '
+    jsr print_char
+    
+    ; Read and display the byte
+    lda $0300
     jsr print_hex
     lda #$0a
     jsr print_char
@@ -179,7 +245,7 @@ do_status:
     jmp monitor
 
 do_write:
-    ; Simple write command - writes $AA to $0200
+    ; Write $AA to $0200
     lda #$AA
     sta $0200
     
@@ -189,15 +255,10 @@ do_write:
     jsr print_string
     jmp monitor
 
-do_reset:
-    ldx #<reset_msg
-    ldy #>reset_msg
-    jsr print_string
-    jmp reset_handler
-
-do_help:
-    ldx #<help_msg
-    ldy #>help_msg
+do_unknown:
+    ; Unknown command
+    ldx #<unknown_msg
+    ldy #>unknown_msg
     jsr print_string
     jmp monitor
 
@@ -219,13 +280,14 @@ reset_msg:
     .byte "Resetting Simple6502...", $0d, $0a, $00
 
 unknown_msg:
-    .byte "Unknown command. Try: R H D S W", $0d, $0a, $00
+    .byte "Unknown command. Try: R H D E S W", $0d, $0a, $00
 
 help_msg:
     .byte "Commands:", $0d, $0a
     .byte "R - Reset system", $0d, $0a
     .byte "H - Help", $0d, $0a
     .byte "D - Display byte at $0200", $0d, $0a
+    .byte "E - Examine byte at $0300", $0d, $0a
     .byte "S - Show status", $0d, $0a
     .byte "W - Write $AA to $0200", $0d, $0a, $00
 
