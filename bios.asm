@@ -1,6 +1,12 @@
 ; Simple6502 BIOS - Using XOR trick for case-insensitive commands
 ; Basic Input/Output System for Simple6502 Computer
 
+; Zero page variables - MUST be defined first for single-pass assembler
+.segment "ZEROPAGE"
+addr_lo:     .res 1     ; Address low byte - will be at $00
+addr_hi:     .res 1     ; Address high byte - will be at $01  
+cmd_len:     .res 1     ; Command length - will be at $02
+
 .segment "VECTORS"
     .word nmi_handler
     .word reset_handler
@@ -581,12 +587,6 @@ write_error_msg:
 
 error_msg:
     .byte "Error: Use format D 1234", $0d, $0a, $00
-
-; Zero page variables for efficient addressing
-.segment "ZEROPAGE"
-addr_lo:     .res 1     ; Address low byte - will be at $00
-addr_hi:     .res 1     ; Address high byte - will be at $01  
-cmd_len:     .res 1     ; Command length - will be at $02
 
 ; Regular RAM variables
 .segment "BSS"
