@@ -1,4 +1,4 @@
-; Simple6502 BIOS - Using proven jump table pattern to avoid branch distance issues
+; Simple6502 BIOS - Using XOR trick for case-insensitive commands
 ; Basic Input/Output System for Simple6502 Computer
 
 .segment "VECTORS"
@@ -96,7 +96,7 @@ hex_letter:
     jsr print_char
     rts
 
-; Monitor with proven jump table pattern
+; Monitor with XOR case conversion trick
 monitor:
     cli
     
@@ -114,64 +114,40 @@ monitor:
     lda #$0a
     jsr print_char
     
-    ; Process command using intermediate jumps (proven pattern)
+    ; Convert to uppercase using XOR trick - MUCH more compact!
+    ; AND with $DF clears bit 5, converting lowercase to uppercase
+    and #$DF           ; Convert to uppercase (clear bit 5)
+    
+    ; Now check only uppercase commands - half the code size!
     cmp #'R'
-    bne check_r
-    jmp jump_reset
-check_r:
-    cmp #'r'
     bne check_H
     jmp jump_reset
 check_H:
     cmp #'H'
-    bne check_h
-    jmp jump_help
-check_h:
-    cmp #'h'
     bne check_D
     jmp jump_help
 check_D:
     cmp #'D'
-    bne check_d
-    jmp jump_display
-check_d:
-    cmp #'d'
     bne check_E
     jmp jump_display
 check_E:
     cmp #'E'
-    bne check_e
-    jmp jump_examine
-check_e:
-    cmp #'e'
     bne check_S
     jmp jump_examine
 check_S:
     cmp #'S'
-    bne check_s
-    jmp jump_status
-check_s:
-    cmp #'s'
     bne check_W
     jmp jump_status
 check_W:
     cmp #'W'
-    bne check_w
-    jmp jump_write
-check_w:
-    cmp #'w'
     bne check_L
     jmp jump_write
 check_L:
     cmp #'L'
-    bne check_l
-    jmp jump_list
-check_l:
-    cmp #'l'
     bne jump_unknown
     jmp jump_list
 
-; Intermediate jump points - CRITICAL: Keep these close to the checks above
+; Intermediate jump points - keep close to checks above
 jump_reset:
     jmp do_reset
 jump_help:
@@ -189,7 +165,7 @@ jump_list:
 jump_unknown:
     jmp do_unknown
 
-; Command implementations - can be anywhere since we use JMP (no distance limit)
+; Command implementations
 do_reset:
     ldx #<reset_msg
     ldy #>reset_msg
@@ -219,7 +195,7 @@ do_display:
     jmp monitor
 
 do_examine:
-    ; Examine byte at $0300 (different from D command)
+    ; Examine byte at $0300
     lda #$03
     jsr print_hex
     lda #$00
