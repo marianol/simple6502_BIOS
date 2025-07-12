@@ -340,15 +340,120 @@ do_status:
     jsr print_char
     jmp monitor
 
-do_write:
-    ; Write $AA to $0200
+; Write command helpers - keep close to avoid branch distance issues
+write_default:
+    ; Default: Write $AA to $0200
     lda #$AA
     sta $0200
-    
-    ; Confirm write
     ldx #<write_msg
     ldy #>write_msg
     jsr print_string
+    jmp monitor
+
+write_error:
+    ldx #<write_error_msg
+    ldy #>write_error_msg
+    jsr print_string
+    jmp monitor
+
+do_write:
+    ; Enhanced W command with address and value parsing
+    lda cmd_len
+    cmp #1             ; Just 'W'?
+    bne check_w_parse
+    jmp write_default
+check_w_parse:
+    cmp #8             ; 'W 1234 AA'?
+    bne write_err_jmp
+    jmp write_parse
+    
+write_parse:
+    ; Parse format: 'W 1234 AA'
+    lda cmd_buffer+1   ; Should be space
+    cmp #' '
+    bne write_error
+    
+    ; Parse address (4 hex digits) - reuse display parsing logic
+    lda cmd_buffer+2
+    jsr hex_char_to_val
+    bcs write_err_jmp
+    jmp write_addr1_ok
+write_err_jmp:
+    jmp write_error
+write_addr1_ok:
+    asl
+    asl
+    asl
+    asl
+    sta addr_hi
+    
+    lda cmd_buffer+3
+    jsr hex_char_to_val
+    bcs write_err_jmp
+write_addr2_ok:
+    ora addr_hi
+    sta addr_hi
+    
+    lda cmd_buffer+4
+    jsr hex_char_to_val
+    bcs write_err_jmp
+write_addr3_ok:
+    asl
+    asl
+    asl
+    asl
+    sta addr_lo
+    
+    lda cmd_buffer+5
+    jsr hex_char_to_val
+    bcs write_err_jmp
+write_addr4_ok:
+    ora addr_lo
+    sta addr_lo
+    
+    ; Check for space before value
+    lda cmd_buffer+6
+    cmp #' '
+    bne write_error
+    
+    ; Parse value (2 hex digits)
+    lda cmd_buffer+7
+    jsr hex_char_to_val
+    bcs write_err_jmp
+write_val1_ok:
+    asl
+    asl
+    asl
+    asl
+    sta $14            ; Temp storage
+    
+    lda cmd_buffer+8
+    jsr hex_char_to_val
+    bcs write_err_jmp
+write_val2_ok:
+    ora $14
+    
+    ; Write the value to the address
+    ldy #0
+    sta (addr_lo),y
+    
+    ; Show confirmation
+    ldx #<write_confirm_msg
+    ldy #>write_confirm_msg
+    jsr print_string
+    
+    ; Print address and value
+    lda addr_hi
+    jsr print_hex
+    lda addr_lo
+    jsr print_hex
+    lda #' '
+    jsr print_char
+    ldy #0
+    lda (addr_lo),y
+    jsr print_hex
+    lda #$0a
+    jsr print_char
     jmp monitor
 
 do_list:
@@ -459,7 +564,7 @@ help_msg:
     .byte "D [addr] - Display byte (ex: D 1234)", $0d, $0a
     .byte "E - Examine byte at $0300", $0d, $0a
     .byte "S - Show status", $0d, $0a
-    .byte "W - Write $AA to $0200", $0d, $0a
+    .byte "W [addr val] - Write (ex: W 1234 AA)", $0d, $0a
     .byte "L - List 8 bytes from $0200", $0d, $0a, $00
 
 status_msg:
@@ -467,6 +572,12 @@ status_msg:
 
 write_msg:
     .byte "Wrote $AA to $0200", $0d, $0a, $00
+
+write_confirm_msg:
+    .byte "Wrote to ", $00
+
+write_error_msg:
+    .byte "Error: Use format W 1234 AA", $0d, $0a, $00
 
 error_msg:
     .byte "Error: Use format D 1234", $0d, $0a, $00
