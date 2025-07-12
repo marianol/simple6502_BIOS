@@ -62,11 +62,11 @@ read_char:
     rts
 
 print_string:
-    stx $10
-    sty $11
+    stx $12            ; Use $12/$13 to avoid conflict with addr_lo/addr_hi
+    sty $13
     ldy #$00
 ps_loop:
-    lda ($10),y
+    lda ($12),y
     beq ps_done
     jsr print_char
     iny
@@ -106,13 +106,50 @@ monitor:
     lda #' '
     jsr print_char
     
-    ; Read single character command
+    ; Read command line (up to 8 characters)
+    ldx #0
+read_cmd_loop:
     jsr read_char
-    jsr print_char  ; Echo
+    cmp #$0d           ; Enter?
+    beq cmd_ready
+    cmp #$08           ; Backspace?
+    beq handle_backspace
+    
+    ; Store character
+    cpx #7             ; Max 8 chars
+    bcs read_cmd_loop
+    sta cmd_buffer,x
+    inx
+    
+    ; Echo
+    jsr print_char
+    jmp read_cmd_loop
+    
+handle_backspace:
+    cpx #0
+    beq read_cmd_loop
+    dex
+    lda #$08
+    jsr print_char
+    lda #' '
+    jsr print_char
+    lda #$08
+    jsr print_char
+    jmp read_cmd_loop
+    
+cmd_ready:
+    stx cmd_len
     
     ; Newline
     lda #$0a
     jsr print_char
+    
+    ; Skip if empty
+    cpx #0
+    beq monitor
+    
+    ; Get first character for command processing
+    lda cmd_buffer
     
     ; Convert to uppercase using XOR trick - MUCH more compact!
     ; AND with $DF clears bit 5, converting lowercase to uppercase
@@ -179,19 +216,92 @@ do_help:
     jmp monitor
 
 do_display:
-    ; Display byte at $0200
+    ; Enhanced D command with optional address parsing
+    lda cmd_len
+    cmp #1             ; Just 'D'?
+    beq display_default
+    cmp #5             ; 'D 1234'?
+    beq display_parse
+    jmp display_error
+    
+display_parse:
+    ; Simple parsing: expect 'D 1234' format
+    lda cmd_buffer+1   ; Should be space
+    cmp #' '
+    bne display_error
+    
+    ; Parse 4 hex digits manually to avoid complex parsing
+    lda cmd_buffer+2
+    jsr hex_char_to_val
+    bcc parse_ok1
+    jmp display_error
+parse_ok1:
+    asl
+    asl
+    asl
+    asl
+    sta addr_hi
+    
+    lda cmd_buffer+3
+    jsr hex_char_to_val
+    bcc parse_ok2
+    jmp display_error
+parse_ok2:
+    ora addr_hi
+    sta addr_hi
+    
+    lda cmd_buffer+4
+    jsr hex_char_to_val
+    bcc parse_ok3
+    jmp display_error
+parse_ok3:
+    asl
+    asl
+    asl
+    asl
+    sta addr_lo
+    
+    lda cmd_buffer+5
+    jsr hex_char_to_val
+    bcc parse_ok4
+    jmp display_error
+parse_ok4:
+    ora addr_lo
+    sta addr_lo
+    
+    jmp display_addr
+    
+display_default:
+    ; Use default address $0200
     lda #$02
-    jsr print_hex
+    sta addr_hi
     lda #$00
+    sta addr_lo
+    
+display_addr:
+    ; Print address
+    lda addr_hi
+    jsr print_hex
+    lda addr_lo
     jsr print_hex
     lda #' '
     jsr print_char
     
-    ; Read and display the byte
-    lda $0200
+    ; Read and display the byte - addr_lo/addr_hi are already in zero page!
+    ldy #0
+    lda (addr_lo),y    ; Direct zero page indirect addressing
     jsr print_hex
     lda #$0a
     jsr print_char
+    jmp return_to_monitor
+    
+display_error:
+    ldx #<error_msg
+    ldy #>error_msg
+    jsr print_string
+    jmp return_to_monitor
+
+return_to_monitor:
     jmp monitor
 
 do_examine:
@@ -294,6 +404,34 @@ do_unknown:
     jsr print_string
     jmp monitor
 
+; Simple hex character to value conversion
+hex_char_to_val:
+    ; Convert single hex character to value (0-15)
+    cmp #'0'
+    bcc hctv_fail
+    cmp #'9'+1
+    bcc hctv_digit
+    ; Convert to uppercase first
+    and #$DF
+    cmp #'A'
+    bcc hctv_fail
+    cmp #'F'+1
+    bcs hctv_fail
+    ; A-F
+    sec
+    sbc #'A'-10
+    clc
+    rts
+hctv_digit:
+    ; 0-9
+    sec
+    sbc #'0'
+    clc
+    rts
+hctv_fail:
+    sec
+    rts
+
 ; Interrupt handlers
 nmi_handler:
     rti
@@ -318,7 +456,7 @@ help_msg:
     .byte "Commands:", $0d, $0a
     .byte "R - Reset system", $0d, $0a
     .byte "H - Help", $0d, $0a
-    .byte "D - Display byte at $0200", $0d, $0a
+    .byte "D [addr] - Display byte (ex: D 1234)", $0d, $0a
     .byte "E - Examine byte at $0300", $0d, $0a
     .byte "S - Show status", $0d, $0a
     .byte "W - Write $AA to $0200", $0d, $0a
@@ -329,3 +467,16 @@ status_msg:
 
 write_msg:
     .byte "Wrote $AA to $0200", $0d, $0a, $00
+
+error_msg:
+    .byte "Error: Use format D 1234", $0d, $0a, $00
+
+; Zero page variables for efficient addressing
+.segment "ZEROPAGE"
+addr_lo:     .res 1     ; Address low byte - will be at $00
+addr_hi:     .res 1     ; Address high byte - will be at $01  
+cmd_len:     .res 1     ; Command length - will be at $02
+
+; Regular RAM variables
+.segment "BSS"
+cmd_buffer:  .res 8     ; Command input buffer
