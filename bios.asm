@@ -29,16 +29,31 @@ saved_pc_hi: .res 1     ; Saved program counter high
 .segment "BIOS"
 
 ; Hardware constants
-ACIA_DATA   = $7F70
-ACIA_STATUS = $7F71
-ACIA_RDRF   = $01
-ACIA_TDRE   = $02
+; Memory map constants
+; Hardware I/O space: $7F00 - $7FFF
+IO_SLOT1    = $7F00     ; IO Slot 1 base
+IO_SLOT2    = $7F10     ; IO Slot 2 base
+
+; UART (MC68B50 ACIA)
+ACIA_DATA   = $7F70     ; ACIA Data register
+ACIA_STATUS = $7F71     ; ACIA Status/Control register
+
+; ACIA Status register bits
+ACIA_RDRF   = $01       ; Receive Data Register Full
+ACIA_TDRE   = $02       ; Transmit Data Register Empty
+ACIA_DCD    = $04       ; Data Carrier Detect
+ACIA_CTS    = $08       ; Clear To Send
+ACIA_FE     = $10       ; Framing Error
+ACIA_OVRN   = $20       ; Receiver Overrun
+ACIA_PE     = $40       ; Parity Error
+ACIA_IRQ    = $80       ; Interrupt Request
+
 
 ; Entry point
 reset_handler:
     sei
     cld
-    ldx #$ff
+    ldx #$ff            ; Initialize stack pointer
     txs
     
     ; Clear zero page
@@ -49,11 +64,8 @@ clear_loop:
     inx
     bne clear_loop
     
-    ; Init ACIA
-    lda #$03
-    sta ACIA_STATUS
-    lda #$15
-    sta ACIA_STATUS
+    ; Initialize hardware
+    jsr init_acia
     
     ; Boot message
     ldx #<boot_msg
@@ -62,6 +74,17 @@ clear_loop:
     
     ; Start monitor
     jmp monitor
+
+; Hardware initialization routines
+init_acia:
+    ; Reset ACIA
+    lda #$03           ; Master reset
+    sta ACIA_STATUS
+    
+    ; Configure ACIA: 8N1, /16 clock, RTS low, TX interrupt disabled, RX interrupt disabled
+    lda #$15           ; 8N1, /16 clock divider, RTS=0, no interrupts
+    sta ACIA_STATUS
+    rts
 
 ; I/O routines
 print_char:
