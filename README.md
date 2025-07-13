@@ -133,9 +133,9 @@ The BIOS sets up basic interrupt vectors. Customize the handlers for:
 
 ## Binary Information
 
-- **Size:** ~1.8KB (fits comfortably in ROM)
+- **Size:** 1905 bytes (~1.9KB, fits comfortably in ROM)
 - **Memory Usage:** Minimal RAM footprint
-- **Zero Page:** 11 bytes for variables
+- **Zero Page:** 13 bytes for variables (efficient addressing)
 - **Stack Usage:** Standard 6502 stack operations
 
 ## License

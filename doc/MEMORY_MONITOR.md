@@ -27,6 +27,7 @@ Performs a warm reset of the Simple6502 system, reinitializing hardware and retu
 > R
 Resetting Simple6502...
 Simple6502 BIOS v1.0
+Copyright (c) 2025 Mariano Luna
 RAM: $0000-$7EFF, ROM: $8000-$FFFF
 I/O: $7F00-$7FFF
 Commands: R H D E S W L G
@@ -263,9 +264,11 @@ Resetting Simple6502...
 
 - **$0000-$7EFF:** RAM (available for user programs and data)
 - **$7F00-$7FFF:** Hardware I/O space
-  - **$7F70-$7F7F:** UART (MC68B50 ACIA)
+  - **$7F00-$7F0F:** I/O Slot 1 (expansion)
+  - **$7F10-$7F1F:** I/O Slot 2 (expansion)
   - **$7F20-$7F2F:** VIA #1 (6522)
   - **$7F30-$7F3F:** VIA #2 (6522)
+  - **$7F70-$7F7F:** UART (MC68B50 ACIA)
 - **$8000-$FFFF:** ROM (BIOS code)
 - **$FFFA-$FFFF:** Interrupt vectors
 

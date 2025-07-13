@@ -53,6 +53,7 @@ When you power on your Simple6502 system, you should see:
 
 ```
 Simple6502 BIOS v1.0
+Copyright (c) 2025 Mariano Luna
 RAM: $0000-$7EFF, ROM: $8000-$FFFF
 I/O: $7F00-$7FFF
 Commands: R H D E S W L G
@@ -117,9 +118,11 @@ The BIOS is configured for this memory map:
 
 - **$0000-$7EFF:** RAM (32KB - 256 bytes)
 - **$7F00-$7FFF:** Hardware I/O Space
-  - **$7F70-$7F7F:** UART (MC68B50 ACIA)
+  - **$7F00-$7F0F:** I/O Slot 1 (expansion)
+  - **$7F10-$7F1F:** I/O Slot 2 (expansion)
   - **$7F20-$7F2F:** VIA #1 (6522)
   - **$7F30-$7F3F:** VIA #2 (6522)
+  - **$7F70-$7F7F:** UART (MC68B50 ACIA)
 - **$8000-$FFFF:** ROM (32KB)
 
 ## Troubleshooting
