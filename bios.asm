@@ -12,6 +12,9 @@ addr_hi:     .res 1     ; Address high byte - will be at $01
 cmd_len:     .res 1     ; Command length - will be at $02
 end_lo:      .res 1     ; End address low byte - will be at $03
 end_hi:      .res 1     ; End address high byte - will be at $04
+; String printing variables
+str_ptr_lo:  .res 1     ; String pointer low byte
+str_ptr_hi:  .res 1     ; String pointer high byte
 ; Saved processor state for S command
 saved_a:     .res 1     ; Saved accumulator
 saved_x:     .res 1     ; Saved X register
@@ -105,11 +108,11 @@ read_char:
     rts
 
 print_string:
-    stx $12            ; Use $12/$13 to avoid conflict with addr_lo/addr_hi
-    sty $13
+    stx str_ptr_lo     ; Store string pointer low byte in zero page variable
+    sty str_ptr_hi     ; Store string pointer high byte in zero page variable
     ldy #$00
 ps_loop:
-    lda ($12),y
+    lda (str_ptr_lo),y ; Use proper zero page variables for indirect addressing
     beq ps_done
     jsr print_char
     iny
