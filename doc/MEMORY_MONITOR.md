@@ -56,21 +56,27 @@ G addr - Go execute at address (ex: G 1000)
 
 ### D - Display Memory
 **Syntax:** 
-- `D` - Display byte at default address ($0200)
+- `D` - Display byte at next address (continues from last D command)
 - `D addr` - Display byte at specified address
 
-Displays a single byte of memory in hexadecimal format, showing both the address and value.
+Displays a single byte of memory in hexadecimal format, showing both the address and value. When used without an address, the D command continues from where the last D command left off, making it easy to examine consecutive memory locations.
 
 **Examples:**
 ```
-> D
-0200 00
-
 > D 1000
 1000 A9
 
+> D
+1001 FF
+
+> D
+1002 8D
+
 > D 8000
 8000 78
+
+> D
+8001 D8
 ```
 
 ### E - Examine Memory

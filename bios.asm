@@ -15,6 +15,9 @@ end_hi:      .res 1     ; End address high byte - will be at $04
 ; String printing variables
 str_ptr_lo:  .res 1     ; String pointer low byte
 str_ptr_hi:  .res 1     ; String pointer high byte
+; Last accessed address for D command continuation
+last_addr_lo: .res 1    ; Last accessed address low byte
+last_addr_hi: .res 1    ; Last accessed address high byte
 ; Saved processor state for S command
 saved_a:     .res 1     ; Saved accumulator
 saved_x:     .res 1     ; Saved X register
@@ -66,6 +69,12 @@ clear_loop:
     sta $00,x
     inx
     bne clear_loop
+    
+    ; Initialize last accessed address to $0200 (reasonable default)
+    lda #$02
+    sta last_addr_hi
+    lda #$00
+    sta last_addr_lo
     
     ; Initialize hardware
     jsr init_acia
@@ -328,11 +337,11 @@ parse_ok4:
     jmp display_addr
     
 display_default:
-    ; Use default address $0200
-    lda #$02
-    sta addr_hi
-    lda #$00
+    ; Use last accessed address and increment it for continuation
+    lda last_addr_lo
     sta addr_lo
+    lda last_addr_hi
+    sta addr_hi
     
 display_addr:
     ; Print address
@@ -349,6 +358,19 @@ display_addr:
     jsr print_hex
     lda #$0a
     jsr print_char
+    
+    ; Update last accessed address to next byte for continuation
+    ; This allows subsequent 'D' commands to continue from where we left off
+    inc addr_lo
+    bne update_last_addr
+    inc addr_hi
+    
+update_last_addr:
+    lda addr_lo
+    sta last_addr_lo
+    lda addr_hi
+    sta last_addr_hi
+    
     jmp return_to_monitor
     
 display_error:
