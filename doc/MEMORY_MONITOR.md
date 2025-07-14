@@ -30,7 +30,7 @@ Simple6502 BIOS v1.0
 Copyright (c) 2025 Mariano Luna
 RAM: $0000-$7EFF, ROM: $8000-$FFFF
 I/O: $7F00-$7FFF
-Commands: R H D E S W L G
+Commands: R H D S W L G
 Simple6502 Ready
 > 
 ```
@@ -46,8 +46,7 @@ Displays a summary of all available commands with syntax examples.
 Commands:
 R - Reset system
 H - Help
-D [addr] - Display byte (ex: D 1234)
-E - Examine byte at $0300
+D [addr] - Display byte (continues)
 S - Show status
 W [addr val] - Write (ex: W 1234 AA)
 L [from to] - List range (ex: L 1000 1010)
@@ -77,17 +76,6 @@ Displays a single byte of memory in hexadecimal format, showing both the address
 
 > D
 8001 D8
-```
-
-### E - Examine Memory
-**Syntax:** `E`
-
-Examines and displays the byte at address $0300. This is a quick way to check a specific location without typing an address.
-
-**Example:**
-```
-> E
-0300 FF
 ```
 
 ### S - Show Status

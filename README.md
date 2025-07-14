@@ -72,12 +72,11 @@ The BIOS is pre-configured for your hardware layout, but you can customize:
 
 The Simple6502 BIOS includes a comprehensive memory monitor with the following commands:
 
-- **D [addr]** - Display memory byte
+- **D [addr]** - Display memory byte (with continuation)
 - **W [addr val]** - Write value to memory
 - **L [from to]** - List memory range
 - **G addr** - Execute code at address
 - **S** - Show processor status
-- **E** - Examine memory at $0300
 - **R** - Reset system
 - **H** - Show help
 
@@ -133,7 +132,7 @@ The BIOS sets up basic interrupt vectors. Customize the handlers for:
 
 ## Binary Information
 
-- **Size:** 1927 bytes (~1.9KB, fits comfortably in ROM)
+- **Size:** 1856 bytes (~1.8KB, fits comfortably in ROM)
 - **Memory Usage:** Minimal RAM footprint
 - **Zero Page:** 15 bytes for variables (efficient addressing)
 - **Stack Usage:** Standard 6502 stack operations

@@ -9,7 +9,7 @@
 | **R** | `R` | Reset system | `R` |
 | **H** | `H` | Show help | `H` |
 | **D** | `D [addr]` | Display byte (continues) | `D 1000` |
-| **E** | `E` | Examine $0300 | `E` |
+
 | **S** | `S` | Show status | `S` |
 | **W** | `W [addr val]` | Write byte | `W 1000 AA` |
 | **L** | `L [from to]` | List range | `L 1000 1010` |
@@ -46,7 +46,6 @@
 > D            # Continue from 1001
 > D            # Continue from 1002
 > L 1000 1010  # Range
-> E            # Quick check $0300
 ```
 
 ### System Operations

@@ -227,10 +227,6 @@ check_D:
     bne check_E
     jmp jump_display
 check_E:
-    cmp #'E'
-    bne check_S
-    jmp jump_examine
-check_S:
     cmp #'S'
     bne check_W
     jmp jump_status
@@ -254,8 +250,6 @@ jump_help:
     jmp do_help
 jump_display:
     jmp do_display
-jump_examine:
-    jmp do_examine
 jump_status:
     jmp do_status
 jump_write:
@@ -380,22 +374,6 @@ display_error:
     jmp return_to_monitor
 
 return_to_monitor:
-    jmp monitor
-
-do_examine:
-    ; Examine byte at $0300
-    lda #$03
-    jsr print_hex
-    lda #$00
-    jsr print_hex
-    lda #' '
-    jsr print_char
-    
-    ; Read and display the byte
-    lda $0300
-    jsr print_hex
-    lda #$0a
-    jsr print_char
     jmp monitor
 
 do_status:
@@ -932,21 +910,20 @@ boot_msg:
     .byte "Copyright (c) 2025 Mariano Luna", $0d, $0a
     .byte "RAM: $0000-$7EFF, ROM: $8000-$FFFF", $0d, $0a
     .byte "I/O: $7F00-$7FFF", $0d, $0a
-    .byte "Commands: R H D E S W L G", $0d, $0a
+    .byte "Commands: R H D S W L G", $0d, $0a
     .byte "Simple6502 Ready", $0d, $0a, $00
 
 reset_msg:
     .byte "Resetting Simple6502...", $0d, $0a, $00
 
 unknown_msg:
-    .byte "Unknown command. Try: R H D E S W L G", $0d, $0a, $00
+    .byte "Unknown command. Try: R H D S W L G", $0d, $0a, $00
 
 help_msg:
     .byte "Commands:", $0d, $0a
     .byte "R - Reset system", $0d, $0a
     .byte "H - Help", $0d, $0a
-    .byte "D [addr] - Display byte (ex: D 1234)", $0d, $0a
-    .byte "E - Examine byte at $0300", $0d, $0a
+    .byte "D [addr] - Display byte (continues)", $0d, $0a
     .byte "S - Show status", $0d, $0a
     .byte "W [addr val] - Write (ex: W 1234 AA)", $0d, $0a
     .byte "L [from to] - List range (ex: L 1000 1010)", $0d, $0a

@@ -56,7 +56,7 @@ Simple6502 BIOS v1.0
 Copyright (c) 2025 Mariano Luna
 RAM: $0000-$7EFF, ROM: $8000-$FFFF
 I/O: $7F00-$7FFF
-Commands: R H D E S W L G
+Commands: R H D S W L G
 Simple6502 Ready
 > 
 ```
@@ -69,8 +69,7 @@ Simple6502 Ready
 Commands:
 R - Reset system
 H - Help
-D [addr] - Display byte (ex: D 1234)
-E - Examine byte at $0300
+D [addr] - Display byte (continues)
 S - Show status
 W [addr val] - Write (ex: W 1234 AA)
 L [from to] - List range (ex: L 1000 1010)
